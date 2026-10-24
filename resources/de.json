@@ -1,0 +1,9 @@
+{
+    "This value does not match the required format.": "Dieser Wert hat nicht das erwartete Format.",
+    "This value is not a valid email address.": "Dieser Wert ist keine gültige E-Mail-Adresse.",
+    "This value is too long. Maximum length is {max}.": "Dieser Wert ist zu lang. Maximallänge ist {max}.",
+    "This value is too short. Minimum length is {min}.": "Dieser Wert ist zu kurz. Mindestlänge ist {min}.",
+    "This value should be one of: {choices}.": "Dieser Wert muss einer der folgenden sein: {choices}.",
+    "This value should match {field}.": "Dieser Wert muss mit {field} übereinstimmen.",
+    "This value should not be blank.": "Dieser Wert darf nicht leer sein."
+}

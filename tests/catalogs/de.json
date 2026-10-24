@@ -1,0 +1,6 @@
+{
+    "Hello {name}": "Hallo {name}",
+    "Home": "Start",
+    "{count} file|{count} files": "{count} Datei|{count} Dateien",
+    "Untranslated here": ""
+}

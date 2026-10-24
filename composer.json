@@ -1,0 +1,28 @@
+{
+    "name": "io/i18n",
+    "description": "Translations and per-request locale for Io: catalogs, {placeholder} and plural messages, $this->t() in views, translated validation errors.",
+    "type": "library",
+    "license": ["MIT", "Apache-2.0"],
+    "require": {
+        "php": ">=8.5",
+        "io/framework": "^0.1.0"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^13.3",
+        "phpstan/phpstan": "^2.2"
+    },
+    "autoload": {
+        "psr-4": {
+            "Io\\I18n\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Io\\I18n\\Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "test": "vendor/bin/phpunit --testdox",
+        "stan": "phpstan analyse"
+    }
+}
