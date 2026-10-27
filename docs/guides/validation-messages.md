@@ -37,7 +37,7 @@ public function token(#[Body] Credentials $credentials): BearerToken
 
 ```bash
 $ curl -X POST 'localhost:8080/v1/tokens?lang=de' -H 'Content-Type: application/json' -d '{"email":"ben","password":""}'
-{"type":"about:blank","title":"Validation failed","status":422,"detail":"Validation failed","errors":{"email":"Dieser Wert ist keine g\u00fcltige E-Mail-Adresse.","password":"Dieser Wert darf nicht leer sein."}}
+{"type":"about:blank","title":"Validation failed","status":422,"detail":"Validation failed","errors":{"email":["Dieser Wert ist keine g\u00fcltige E-Mail-Adresse."],"password":["Dieser Wert darf nicht leer sein."]}}
 ```
 
 Without `?lang=de` (and no cookie or German browser) the same request answers `This value is not a valid email address.` The messages a live component gets from a DTO come out the same way: the checkout's `CheckoutForm` (`#[NotBlank]`, `#[Email]`, `#[Length]`, `#[Regex]`) shows "Dieser Wert darf nicht leer sein." under an empty name field for a German customer.
@@ -55,6 +55,14 @@ The plugin ships `resources/de.json` with German for these messages:
 | This value does not match the required format. | Dieser Wert hat nicht das erwartete Format. |
 | This value should be one of: {choices}. | Dieser Wert muss einer der folgenden sein: {choices}. |
 | This value should match {field}. | Dieser Wert muss mit {field} übereinstimmen. |
+| This value is not a valid date. | Dieser Wert ist kein gültiges Datum. |
+| This value should be before {date}. | Dieser Wert muss vor {date} liegen. |
+| This value should be after {date}. | Dieser Wert muss nach {date} liegen. |
+| This value should be {min} or more. | Dieser Wert muss mindestens {min} sein. |
+| This value should be {max} or less. | Dieser Wert darf höchstens {max} sein. |
+| This value is not valid. | Dieser Wert ist ungültig. |
+
+A rule's own `message:` (`#[NotBlank(message: 'Please enter your first name.')]`) goes through the same catalog, with its text as the key.
 
 The bundled catalog lies underneath the app's: a non-empty entry with the same English text in your `lang/de.json` wins. To word one message differently, add only that entry:
 

@@ -36,7 +36,7 @@ final class ShopControllerTest extends AppTestCase
     {
         $this->json('POST', '/v1/tokens?lang=de', ['email' => 'ben', 'password' => ''])
             ->assertStatus(422)
-            ->assertJsonPath('errors.email', 'Dieser Wert ist keine gültige E-Mail-Adresse.');
+            ->assertJsonPath('errors.email.0', 'Dieser Wert ist keine gültige E-Mail-Adresse.');
     }
 }
 ```

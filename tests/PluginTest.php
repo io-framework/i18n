@@ -67,8 +67,8 @@ final class PluginTest extends TestCase
     {
         $this->json('POST', '/signup?lang=de', ['email' => 'not-an-email'])
             ->assertStatus(422)
-            ->assertJsonPath('errors.email', 'Dieser Wert ist keine gültige E-Mail-Adresse.');
+            ->assertJsonPath('errors.email.0', 'Dieser Wert ist keine gültige E-Mail-Adresse.');
         $this->json('POST', '/signup', ['email' => 'not-an-email'])
-            ->assertJsonPath('errors.email', 'This value is not a valid email address.');
+            ->assertJsonPath('errors.email.0', 'This value is not a valid email address.');
     }
 }
