@@ -85,4 +85,17 @@ final class TranslatorTest extends TestCase
         $this->assertSame(['en' => 'Hello Ada', 'de' => 'Hallo Ada'], $seen);
         $this->assertSame('en', $t->locale());
     }
+
+    public function testNumbersAndDatesFollowTheLocale(): void
+    {
+        $t = $this->translator();
+        $this->assertSame('8.7', $t->number(8.66, 1));
+        $this->assertSame('12,345', $t->number(12345));
+        $this->assertSame('Jan 8, 2026', $t->date('2026-01-08'));
+        $t->setLocale('de');
+        $this->assertSame('8,7', $t->number(8.66, 1));
+        $this->assertSame('08.01.2026', $t->date(new \DateTimeImmutable('2026-01-08')));
+        $this->assertSame('8. Januar 2026', $t->date('2026-01-08', 'long'));
+        $this->assertSame('3,50', $t->number(3.5, 2, 'fr'));
+    }
 }

@@ -76,6 +76,45 @@ $translator->t('{count} pretzel|{count} pretzels', ['count' => 3]);   // "3 pret
 
 **Returns** `string`
 
+### number()
+
+```php
+public function number(int|float $value, int $decimals = 0, ?string $locale = null): string
+```
+
+A number as the locale writes it: `8.7` in en, `8,7` in de, `12 345` in fr. Without the intl extension it is
+number_format()'s `8.70`-style English.
+
+**Parameters**
+
+- `$value` `int|float`
+- `$decimals` `int`
+- `$locale` `?string`
+
+**Returns** `string`
+
+### date()
+
+```php
+public function date(
+    \DateTimeInterface|string $date,
+    string $style = 'medium',
+    ?string $locale = null,
+): string
+```
+
+A date as the locale writes it, in the app's time zone: `Jan 8, 2026` (medium) in en, `08.01.2026` in de.
+$style is short, medium, long or full; a string date is read by DateTimeImmutable (`2026-01-08`).
+Without the intl extension it is `2026-01-08`.
+
+**Parameters**
+
+- `$date` [`DateTimeInterface`](https://www.php.net/manual/en/class.datetimeinterface.php)`|string`
+- `$style` `string`
+- `$locale` `?string`
+
+**Returns** `string`
+
 ### translate()
 
 ```php

@@ -23,6 +23,14 @@ final class Translator implements Messages
     /** @var FiberLocal<string> */
     private FiberLocal $locale;
 
+    /** @var array<string, \NumberFormatter> one per locale and decimals, built on first use */
+    private array $numbers = [];
+
+    /** @var array<string, \IntlDateFormatter> one per locale and style */
+    private array $dates = [];
+
+    private const array DATE_STYLES = ['short' => 3, 'medium' => 2, 'long' => 1, 'full' => 0];
+
     public function __construct(private I18nOptions $options)
     {
         $this->locale = new FiberLocal();
@@ -58,6 +66,50 @@ final class Translator implements Messages
             ?? $this->lookup($text, $this->options->fallback ?? $this->options->default)
             ?? $text;
         return self::format($translated, $params);
+    }
+
+    /**
+     * A number as the locale writes it: `8.7` in en, `8,7` in de, `12 345` in fr. Without the intl extension it is
+     * number_format()'s `8.70`-style English.
+     */
+    public function number(float|int $value, int $decimals = 0, ?string $locale = null): string
+    {
+        $locale ??= $this->locale();
+        if (!class_exists(\NumberFormatter::class)) {
+            return number_format($value, $decimals);
+        }
+        $formatter = $this->numbers["$locale/$decimals"] ??= self::numberFormatter($locale, $decimals);
+        $text = $formatter->format($value);
+
+        return $text === false ? number_format($value, $decimals) : $text;
+    }
+
+    /**
+     * A date as the locale writes it, in the app's time zone: `Jan 8, 2026` (medium) in en, `08.01.2026` in de.
+     * $style is short, medium, long or full; a string date is read by DateTimeImmutable (`2026-01-08`).
+     * Without the intl extension it is `2026-01-08`.
+     */
+    public function date(\DateTimeInterface|string $date, string $style = 'medium', ?string $locale = null): string
+    {
+        $locale ??= $this->locale();
+        $date = is_string($date) ? new \DateTimeImmutable($date) : $date;
+        $dateStyle = self::DATE_STYLES[$style] ?? throw new \InvalidArgumentException("Date style $style: short, medium, long or full");
+        if (!class_exists(\IntlDateFormatter::class)) {
+            return $date->format('Y-m-d');
+        }
+        $formatter = $this->dates["$locale/$style"] ??= new \IntlDateFormatter($locale, $dateStyle, \IntlDateFormatter::NONE);
+        $text = $formatter->format($date);
+
+        return $text === false ? $date->format('Y-m-d') : $text;
+    }
+
+    private static function numberFormatter(string $locale, int $decimals): \NumberFormatter
+    {
+        $formatter = new \NumberFormatter($locale, \NumberFormatter::DECIMAL);
+        $formatter->setAttribute(\NumberFormatter::MIN_FRACTION_DIGITS, $decimals);
+        $formatter->setAttribute(\NumberFormatter::MAX_FRACTION_DIGITS, $decimals);
+
+        return $formatter;
     }
 
     /** Validation\Messages: translates a Validator message in the current locale, the same as t(). */

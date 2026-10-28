@@ -54,6 +54,8 @@ final class I18nPlugin extends PluginBase implements ViewHelper
         return [
             't' => $this->translator->t(...),
             'locale' => $this->translator->locale(...),
+            'number' => $this->translator->number(...),
+            'date' => $this->translator->date(...),
         ];
     }
 }

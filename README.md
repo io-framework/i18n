@@ -51,6 +51,15 @@ $app->configure(function (I18nOptions $i18n) {
   escapes the result: `{{ $this->t('Thank you, {name}!', ['name' => $order->customerName]) }}`.
 - Use string literals: `t($variable)` works at runtime but the tasks cannot see it (`i18n:lint` reports it).
 
+Numbers and dates as the locale writes them, in templates and on the Translator:
+
+- `$this->number(8.66, 1)`: `8.7` in en, `8,7` in de; `$this->number(12345)`: `12,345`, `12.345`, `12 345`.
+- `$this->date('2026-01-08')`: `Jan 8, 2026` in en, `08.01.2026` in de; a style `short`, `medium` (default),
+  `long` or `full` as the second argument, a `DateTimeInterface` or a string `DateTimeImmutable` reads. In the
+  app's time zone.
+- The formatters come from the intl extension and are kept per locale; without intl the numbers come from
+  `number_format()` and the dates as `2026-01-08`.
+
 ## Catalogs
 
 `lang/de.json`, written and updated by the tasks:
