@@ -85,9 +85,19 @@ final class TasksTest extends TestCase
             $this->assertStringContainsString('plural form differs in "It\'s done"', $e->getMessage());
         }
 
-        file_put_contents("$this->dir/lang/de.json", json_encode(['Welcome' => 'Willkommen', 'Hello {name}' => 'Hallo {name}', "It's done" => 'Fertig']));
+        file_put_contents("$this->dir/views/Count.php", "<?= \$this->t('{count} day|{count} days') ?>");
+        file_put_contents("$this->dir/lang/ru.json", json_encode(['Welcome' => 'Добро пожаловать', 'Hello {name}' => 'Привет, {name}', "It's done" => 'Готово', '{count} day|{count} days' => '{count} день|{count} дней']));
+        try {
+            $this->task('i18n:check');
+            $this->fail('check should have failed');
+        } catch (RuntimeException $e) {
+            $this->assertStringContainsString('ru: plural forms in "{count} day|{count} days": 2, ru needs 3 (one|few|many)', $e->getMessage());
+        }
+        file_put_contents("$this->dir/lang/ru.json", json_encode(['Welcome' => 'Добро пожаловать', 'Hello {name}' => 'Привет, {name}', "It's done" => 'Готово', '{count} day|{count} days' => '{count} день|{count} дня|{count} дней']));
+
+        file_put_contents("$this->dir/lang/de.json", json_encode(['Welcome' => 'Willkommen', 'Hello {name}' => 'Hallo {name}', "It's done" => 'Fertig', '{count} day|{count} days' => '{count} Tag|{count} Tage']));
         $this->task('i18n:add', 'fr');
-        file_put_contents("$this->dir/lang/fr.json", json_encode(['Welcome' => 'Bienvenue', 'Hello {name}' => 'Bonjour {name}', "It's done" => 'Fini']));
+        file_put_contents("$this->dir/lang/fr.json", json_encode(['Welcome' => 'Bienvenue', 'Hello {name}' => 'Bonjour {name}', "It's done" => 'Fini', '{count} day|{count} days' => '{count} jour|{count} jours']));
         $this->assertStringStartsWith('OK', $this->task('i18n:check'));
     }
 

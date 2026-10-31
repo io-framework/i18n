@@ -16,8 +16,8 @@ Implements `Io\Validation\Messages`
 Translates source texts into the current locale, falling back to the fallback locale and then to the source text.
 
 `t('Source text', [...])` returns the current locale's translation, else the fallback locale's,
-else the source text itself. `{name}` placeholders are replaced from `$params`; `one|other` picks by
-`$params['count']`. The plugin registers one instance as a service (`#[Inject] Translator`) and binds
+else the source text itself. `{name}` placeholders are replaced from `$params`; `|`-separated plural
+forms are picked by `$params['count']` and the CLDR plural rules of the text's locale (pluralCategories()). The plugin registers one instance as a service (`#[Inject] Translator`) and binds
 it as `Validation\Messages`, so the Validator's English messages are translated the same way.
 Catalogs are read once per locale and kept for the life of the process. The current locale is kept per
 request (a FiberLocal), so requests a worker runs interleaved each translate in their own locale.
@@ -75,6 +75,23 @@ $translator->t('{count} pretzel|{count} pretzels', ['count' => 3]);   // "3 pret
 - `$locale` `?string`: A locale for this call only, instead of the current one.
 
 **Returns** `string`
+
+### pluralCategories()
+
+```php
+public static function pluralCategories(string $locale): array
+```
+
+The CLDR plural categories a locale uses for whole numbers, in CLDR order: `one, other` for en
+and de, `one, few, many` for ru, `other` for ja. A plural text has one `|` form per category.
+Categories only very large numbers reach (fr `many` for millions) are left out; such a count
+takes the last form. Without the intl extension every locale is `one, other`.
+
+**Parameters**
+
+- `$locale` `string`
+
+**Returns** `list<string>`
 
 ### number()
 

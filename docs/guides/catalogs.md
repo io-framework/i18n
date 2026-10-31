@@ -52,7 +52,7 @@ The tasks run through the app's own front controller, like any `#[Task]` of Io. 
 
 ```bash
 tenma index.php i18n:extract     # scan the code, add new texts to every catalog, move gone ones to __orphans
-tenma index.php i18n:check       # exit 1 on untranslated entries, orphans, placeholder/plural mismatches, missing catalogs
+tenma index.php i18n:check       # exit 1 on untranslated entries, orphans, placeholder mismatches, wrong plural form counts, missing catalogs
 tenma index.php i18n:status      # per-locale table: total, translated, empty, orphans, percent done
 tenma index.php i18n:add fr      # create lang/fr.json with every source text untranslated
 tenma index.php i18n:lint        # exit 1 on t($var), padded texts, "$interpolation", near-duplicate texts

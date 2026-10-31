@@ -99,14 +99,22 @@ The translation may put the placeholders in any order: `"Abholung am {day}: Best
 
 ## Plural forms
 
-A text with `|` has two forms, `one|other`. When `$params['count']` is numeric, the first form is used when the count, cut to an integer, is 1 (so `1`, `"1"` and `1.5`) and the second for everything else (0, 2, -1):
+A text with `|` has plural forms. When `$params['count']` is numeric, it is cut to an integer (so `1.5` counts as `1`) and its CLDR plural category in the text's locale picks the form. The forms follow the categories the locale uses for whole numbers, in CLDR order (`zero`, `one`, `two`, `few`, `many`, `other`):
+
+| Locale | Forms | Example |
+|---|---|---|
+| en, de, fr | `one\|other` | 1 / 0, 2, 5 |
+| ru, pl | `one\|few\|many` | 1, 21 / 2, 24 / 0, 5, 11 |
+| ja | one form, no `\|` | |
+
+`Translator::pluralCategories($locale)` returns that list. The source text is written in the default locale's forms:
 
 ```php
 $this->t('{count} pretzel|{count} pretzels', ['count' => 1]);   // "1 pretzel"
 $this->t('{count} pretzel|{count} pretzels', ['count' => 3]);   // "3 pretzels"
 ```
 
-The translation has the same two forms: `"{count} Brezel|{count} Brezeln"`. The form is chosen after the lookup, so it is always the translation's own `|` that splits. Without a numeric `count`, the text is returned with the `|` in it. The text is split at the first `|` only; a third form ends up in the second.
+Each translation has its own locale's forms: `"{count} Brezel|{count} Brezeln"` in de, `"{count} крендель|{count} кренделя|{count} кренделей"` in ru, `"{count}個のプレッツェル"` in ja. The form is chosen after the lookup with the rules of the locale the text came from, so a missing translation shows the source text with the source language's rules. A count whose category has no form of its own (too few forms, or French `many` for millions) takes the last form. Without a numeric `count`, the text is returned with the `|` in it. `i18n:check` reports a translation whose number of forms does not match its locale. Without the intl extension every locale uses `one|other`.
 
 ## Escaping
 

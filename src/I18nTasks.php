@@ -90,8 +90,9 @@ final class I18nTasks
                 if ($missing !== [] || $extra !== []) {
                     $problems[] = "$locale: placeholders differ in \"$text\" (missing: " . implode(', ', $missing) . '; extra: ' . implode(', ', $extra) . ')';
                 }
-                if (str_contains($text, '|') !== str_contains($translation, '|')) {
-                    $problems[] = "$locale: plural form differs in \"$text\"";
+                $plural = self::pluralProblem($locale, $text, $translation);
+                if ($plural !== null) {
+                    $problems[] = $plural;
                 }
             }
         }
@@ -225,6 +226,24 @@ final class I18nTasks
     private function directory(): string
     {
         return rtrim($this->options->directory ?? throw new RuntimeException('I18nOptions::$directory is not configured.'), '/');
+    }
+
+    /**
+     * A plural text needs one `|` form per plural category of the locale (Translator::pluralCategories()),
+     * and a text without forms must not get any.
+     */
+    private static function pluralProblem(string $locale, string $text, string $translation): ?string
+    {
+        $forms = substr_count($translation, '|') + 1;
+        if (!str_contains($text, '|')) {
+            return $forms > 1 ? "$locale: plural form differs in \"$text\"" : null;
+        }
+        $categories = Translator::pluralCategories($locale);
+        if ($forms === count($categories)) {
+            return null;
+        }
+        $expected = count($categories) . ' (' . implode('|', $categories) . ')';
+        return "$locale: plural forms in \"$text\": $forms, $locale needs $expected";
     }
 
     /** @return list<string> */

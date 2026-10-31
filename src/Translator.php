@@ -9,8 +9,9 @@ use Io\Validation\Messages;
  * Translates source texts into the current locale, falling back to the fallback locale and then to the source text.
  *
  * `t('Source text', [...])` returns the current locale's translation, else the fallback locale's,
- * else the source text itself. `{name}` placeholders are replaced from `$params`; `one|other` picks by
- * `$params['count']`. The plugin registers one instance as a service (`#[Inject] Translator`) and binds
+ * else the source text itself. `{name}` placeholders are replaced from `$params`; `|`-separated plural
+ * forms are picked by `$params['count']` and the CLDR plural rules of the text's locale
+ * (pluralCategories()). The plugin registers one instance as a service (`#[Inject] Translator`) and binds
  * it as `Validation\Messages`, so the Validator's English messages are translated the same way.
  * Catalogs are read once per locale and kept for the life of the process. The current locale is kept per
  * request (a FiberLocal), so requests a worker runs interleaved each translate in their own locale.
@@ -30,6 +31,17 @@ final class Translator implements Messages
     private array $dates = [];
 
     private const array DATE_STYLES = ['short' => 3, 'medium' => 2, 'long' => 1, 'full' => 0];
+
+    /** CLDR plural categories in CLDR order; a catalog's `|` forms follow this order. */
+    private const array PLURAL_ORDER = ['zero', 'one', 'two', 'few', 'many', 'other'];
+
+    private const string PLURAL_PATTERN = '{n, plural, zero{zero} one{one} two{two} few{few} many{many} other{other}}';
+
+    /** @var array<string, \MessageFormatter> one per locale, answers a count's plural category */
+    private static array $pluralFormatters = [];
+
+    /** @var array<string, list<string>> locale => its integer plural categories */
+    private static array $pluralCategories = [];
 
     public function __construct(private I18nOptions $options)
     {
@@ -62,10 +74,52 @@ final class Translator implements Messages
     public function t(string $text, array $params = [], ?string $locale = null): string
     {
         $locale ??= $this->locale();
-        $translated = $this->lookup($text, $locale)
-            ?? $this->lookup($text, $this->options->fallback ?? $this->options->default)
-            ?? $text;
-        return self::format($translated, $params);
+        $translated = $this->lookup($text, $locale);
+        if ($translated === null) {
+            // The plural forms follow the rules of the locale the text comes from
+            $locale = $this->options->fallback ?? $this->options->default;
+            $translated = $this->lookup($text, $locale);
+        }
+        if ($translated === null) {
+            $locale = $this->options->default;
+            $translated = $text;
+        }
+        return self::format($translated, $params, $locale);
+    }
+
+    /**
+     * The CLDR plural categories a locale uses for whole numbers, in CLDR order: `one, other` for en
+     * and de, `one, few, many` for ru, `other` for ja. A plural text has one `|` form per category.
+     * Categories only very large numbers reach (fr `many` for millions) are left out; such a count
+     * takes the last form. Without the intl extension every locale is `one, other`.
+     *
+     * @return list<string>
+     */
+    public static function pluralCategories(string $locale): array
+    {
+        if (isset(self::$pluralCategories[$locale])) {
+            return self::$pluralCategories[$locale];
+        }
+        // Integer rules repeat every 100 (ru 11 vs 21, 111 vs 121), so 0 to 199 reaches every category
+        $seen = [];
+        foreach (range(0, 199) as $count) {
+            $seen[self::pluralCategory($locale, $count)] = true;
+        }
+        $categories = array_filter(self::PLURAL_ORDER, fn (string $category): bool => isset($seen[$category]));
+
+        return self::$pluralCategories[$locale] = array_values($categories);
+    }
+
+    /** The CLDR plural category of a whole number in a locale: `few` for 24 in ru. */
+    private static function pluralCategory(string $locale, int $count): string
+    {
+        if (!class_exists(\MessageFormatter::class)) {
+            return $count === 1 ? 'one' : 'other';
+        }
+        $formatter = self::$pluralFormatters[$locale] ??= new \MessageFormatter($locale, self::PLURAL_PATTERN);
+        $category = $formatter->format(['n' => $count]);
+
+        return is_string($category) && in_array($category, self::PLURAL_ORDER, true) ? $category : 'other';
     }
 
     /**
@@ -163,12 +217,11 @@ final class Translator implements Messages
     }
 
     /** @param array<string, mixed> $params */
-    private static function format(string $message, array $params): string
+    private static function format(string $message, array $params, string $locale): string
     {
         $count = $params['count'] ?? null;
         if (str_contains($message, '|') && is_numeric($count)) {
-            [$one, $other] = explode('|', $message, 2);
-            $message = (int) $count === 1 ? $one : $other;
+            $message = self::pluralForm(explode('|', $message), (int) $count, $locale);
         }
         foreach ($params as $name => $value) {
             if (is_scalar($value)) {
@@ -176,5 +229,22 @@ final class Translator implements Messages
             }
         }
         return $message;
+    }
+
+    /**
+     * The form for $count: forms map to pluralCategories() in order. A category without a form of its
+     * own (too few forms, or fr `many`) takes the last form.
+     *
+     * @param list<string> $forms
+     */
+    private static function pluralForm(array $forms, int $count, string $locale): string
+    {
+        $categories = self::pluralCategories($locale);
+        $index = array_search(self::pluralCategory($locale, $count), $categories, true);
+        $last = count($forms) - 1;
+        if ($index === false || $index > $last) {
+            return $forms[$last];
+        }
+        return $forms[$index];
     }
 }

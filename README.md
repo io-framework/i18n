@@ -46,7 +46,8 @@ $app->configure(function (I18nOptions $i18n) {
 
 - Templates: `$this->t('Sales')`, `$this->t('Sign out {name}', ['name' => $user['name']])`, `$this->locale()`.
 - Services and controllers: `#[Inject] Io\I18n\Translator $translator` and `$translator->t(...)`.
-- `{name}` is replaced from the parameters; `one|other` picks the first form when `count` is 1.
+- `{name}` is replaced from the parameters; `|` separates plural forms, picked by `count` and the
+  CLDR plural rules of the locale: `one|other` in en, de and fr, `one|few|many` in ru, one form in ja.
 - `t()` never escapes, so it also works for `<title>`, attributes or mail text; in a view `{{ }}`
   escapes the result: `{{ $this->t('Thank you, {name}!', ['name' => $order->customerName]) }}`.
 - Use string literals: `t($variable)` works at runtime but the tasks cannot see it (`i18n:lint` reports it).
@@ -76,6 +77,9 @@ Numbers and dates as the locale writes them, in templates and on the Translator:
 }
 ```
 
+A plural translation has one form per plural category the locale uses for whole numbers, in CLDR
+order (`Translator::pluralCategories('ru')` is `['one', 'few', 'many']`), so `ru.json` has
+`"{count} Brezel|{count} Brezeln": "{count} крендель|{count} кренделя|{count} кренделей"`.
 `""` means not translated yet (the source text is shown). `__orphans` holds entries whose text no
 longer occurs in the code; they are kept so a translation can be carried over after a rewording.
 A missing entry is looked up in `$fallback` before falling back to the source text.
@@ -84,7 +88,7 @@ A missing entry is looked up in `$fallback` before falling back to the source te
 
 ```bash
 tenma index.php i18n:extract     # scan the code, add new texts to every catalog, move gone ones to __orphans
-tenma index.php i18n:check       # exit 1 on untranslated entries, orphans, placeholder/plural mismatches, missing catalogs
+tenma index.php i18n:check       # exit 1 on untranslated entries, orphans, placeholder mismatches, wrong plural form counts, missing catalogs
 tenma index.php i18n:status      # per-locale table: total, translated, empty, orphans, percent done
 tenma index.php i18n:add fr      # create lang/fr.json with every source text untranslated
 tenma index.php i18n:lint        # exit 1 on t($var), padded texts, "$interpolation", near-duplicate texts
